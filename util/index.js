@@ -1,4 +1,4 @@
-export default function bytesToSize(bytes) {
+export function bytesToSize(bytes) {
     const sizes = ['Битов', 'КБ', 'МБ'];
 
     if (bytes === 0) return '0 Битов';

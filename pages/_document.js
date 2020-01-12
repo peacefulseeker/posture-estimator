@@ -1,7 +1,7 @@
 import React from 'react';
 import Document, {Head, Main, NextScript} from 'next/document';
 import {ServerStyleSheet} from 'styled-components';
-<Head/>;
+
 export default class DocumentRoot extends Document {
     static async getInitialProps(ctx) {
         const sheet = new ServerStyleSheet();
