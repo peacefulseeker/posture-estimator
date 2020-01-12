@@ -86,6 +86,7 @@ function DropZone() {
     const [files, setFiles] = useState([]);
     const [rejectHint, setRejectHint] = useState();
     const [base64, setBase64] = useState();
+    const [optimizedSize, setOptimizedSize] = useState();
     const [imageIsRendered, setImageIsRendered] = useState(false);
     const [imageIsOptimizing, setimageIsOptimizing] = useState(false);
     const {getRootProps, getInputProps, isDragActive} = useDropzone({
@@ -104,8 +105,10 @@ function DropZone() {
                     const image = await Jimp.read(originalBuffer);
                     await image.resize(IMAGE_SIZE, Jimp.AUTO);
                     await image.quality(IMAGE_RESIZE_QUALITY);
+                    const buffer = await image.getBufferAsync(image.getMIME());
                     const base64 = await image.getBase64Async(image.getMIME());
                     setBase64(base64);
+                    setOptimizedSize(buffer.byteLength);
                     setimageIsOptimizing(false);
                 };
                 reader.readAsArrayBuffer(file);
@@ -155,11 +158,19 @@ function DropZone() {
         setImageIsRendered(true);
     };
 
-    const onDownload = (e) => {
+    const onRenderedImageDownload = (e) => {
         e.stopPropagation();
         let link = document.createElement('a');
         link.download = files[0].name;
         link.href = canvasRef.current.toDataURL();
+        link.click();
+    };
+
+    const onOptimizedImageDownload = (e) => {
+        e.stopPropagation();
+        let link = document.createElement('a');
+        link.download = files[0].name;
+        link.href = imageRef.current.src;
         link.click();
     };
 
@@ -205,10 +216,12 @@ function DropZone() {
                                 onMouseDown={onCanvasMouseDown}
                             />
                         </Results>
-                        <p>Размер изображения: <strong>{bytesToSize(file.size)}</strong></p>
+                        <p>Изначальный размер изображения: <strong>{bytesToSize(file.size)}</strong></p>
+                        {!imageIsOptimizing && <p>Размер изображения после оптимизации: <strong>{bytesToSize(optimizedSize)}</strong></p>}
                         <button onClick={onFileDelete}>Удалить</button>
                         <button onClick={onPostureEstimate}>Визуализировать точки</button>
-                        {imageIsRendered && <button onClick={onDownload}>Скачать результат</button>}
+                        {!imageIsOptimizing && <button onClick={onOptimizedImageDownload}>Скачать оптизированное изображение(слева)</button>}
+                        {imageIsRendered && <button onClick={onRenderedImageDownload}>Скачать результат(справа)</button>}
                     </Fragment>
                 ))}
             </ResultsWrapper>
