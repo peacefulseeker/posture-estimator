@@ -1,7 +1,10 @@
-import React, {useState, useEffect, Fragment, useRef} from 'react';
+import React, {useState, Fragment, useRef} from 'react';
 import styled from 'styled-components';
 import Jimp from 'jimp';
+import PropTypes from 'prop-types';
 import {useDropzone} from 'react-dropzone';
+import {Button} from 'grommet';
+import {Edit, Erase, Download/*, Upload */} from 'grommet-icons';
 import * as posenet from '@tensorflow-models/posenet';
 
 import {bytesToSize} from '../util';
@@ -13,11 +16,11 @@ import {
 } from '../util/canvasManipulations';
 
 const MAX_UPLLOAD_SIZE = 10 * 1024 * 1024; // ~ 10mb
-const IMAGE_SIZE = 513;
+const IMAGE_RESIZE_WIDTH = 513;
 const IMAGE_RESIZE_QUALITY = 90;
 
 const StyledDropZone = styled.div`
-    width: ${IMAGE_SIZE}px;
+    width: ${props => props.width || IMAGE_RESIZE_WIDTH}px;
     margin: 20px auto;
     min-height: 150px;
     border: 1px solid #656565;
@@ -26,6 +29,7 @@ const StyledDropZone = styled.div`
     justify-content: center;
     align-items: center;
     text-align: center;
+    flex-wrap: wrap;
 
     &:hover {
         cursor: pointer;
@@ -36,18 +40,17 @@ const StyledDropZone = styled.div`
         border-color: coral;
     `}
 `;
+StyledDropZone.propTypes = {
+    width: PropTypes.number,
+};
 
 const DranZoneInfo = styled.div`
-
-`;
-
-const PreviewImage = styled.img`
-    width: 100%;
-    display: block;
+    flex-basis: 100%;
+    margin-bottom: 20px;
 `;
 
 const ResizedImage = styled.img`
-    width: 100%;
+    /* width: 100%; */
     display: block;
 `;
 
@@ -68,55 +71,83 @@ const HintReject = styled.p`
 `;
 
 const ResultsWrapper = styled.div`
-    width: ${IMAGE_SIZE}px;
     margin: 20px auto;
-    ${props => props.hasResults && `
-        min-height: 800px;
-    `}
+    text-align: center;
+    min-height: 800px;
 `;
-const Canvas = styled.canvas``;
+
 const Results = styled.div`
     display: flex;
     justify-content: center;
 `;
 
+const ImageActions = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+`;
+
+const OptimizedImage = styled.div`
+    margin-bottom: 20px;
+`;
+
+const ResultsImage = styled.div`
+    margin-bottom: 20px;
+`;
+
+const Canvas = styled.canvas`
+    display: block;
+`;
+
+const StyledButton = styled(Button)`
+`;
+StyledButton.defaultProps = {
+    margin: 'xsmall',
+};
+
 function DropZone() {
     const imageRef = useRef();
     const canvasRef = useRef();
-    const [files, setFiles] = useState([]);
+    const [image, setImage] = useState();
     const [rejectHint, setRejectHint] = useState();
-    const [base64, setBase64] = useState();
-    const [optimizedSize, setOptimizedSize] = useState();
     const [imageIsRendered, setImageIsRendered] = useState(false);
-    const [imageIsOptimizing, setimageIsOptimizing] = useState(false);
+    const [imageIsOptimizing, setImageIsOptimizing] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const {getRootProps, getInputProps, isDragActive} = useDropzone({
         accept: 'image/jpeg, image/png',
         multiple: false,
         maxSize: MAX_UPLLOAD_SIZE,
         onDrop: acceptedFiles => {
             setRejectHint();
+            setImageIsRendered(false);
             for (const file of acceptedFiles) {
                 const reader = new FileReader();
                 reader.onabort = () => console.warn('file reading was aborted');
                 reader.onerror = () => console.warn('file reading has failed');
                 reader.onload = async() => {
-                    setimageIsOptimizing(true);
+                    setImageIsOptimizing(true);
                     const originalBuffer = reader.result;
                     const image = await Jimp.read(originalBuffer);
-                    await image.resize(IMAGE_SIZE, Jimp.AUTO);
-                    await image.quality(IMAGE_RESIZE_QUALITY);
+                    const width = image.getWidth();
+                    const shouldOptimize = width > IMAGE_RESIZE_WIDTH;
+                    if (shouldOptimize) {
+                        await image.resize(IMAGE_RESIZE_WIDTH, Jimp.AUTO);
+                        await image.quality(IMAGE_RESIZE_QUALITY);
+                    }
                     const buffer = await image.getBufferAsync(image.getMIME());
                     const base64 = await image.getBase64Async(image.getMIME());
-                    setBase64(base64);
-                    setOptimizedSize(buffer.byteLength);
-                    setimageIsOptimizing(false);
+                    setImage({
+                        optimizedSize: buffer.byteLength,
+                        src: base64,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                    });
+                    setImageIsOptimizing(false);
                 };
                 reader.readAsArrayBuffer(file);
             }
-
-            setFiles(acceptedFiles.map(file => Object.assign(file, {
-                preview: URL.createObjectURL(file),
-            })));
         },
         onDropRejected: rejectedFiles => {
             setRejectHint(`
@@ -127,15 +158,11 @@ function DropZone() {
         },
     });
 
-    useEffect(() => () => {
-        // Make sure to revoke the data uris to avoid memory leaks
-        files.forEach(file => URL.revokeObjectURL(file.preview));
-    }, [files]);
-
     const onFileDelete = (e) => {
         e.stopPropagation();
-        setFiles([]);
+        setImage();
         setRejectHint();
+        setImageIsRendered(false);
     };
 
     const onPostureEstimate = async(e) => {
@@ -144,9 +171,10 @@ function DropZone() {
         const canvas = canvasRef.current;
         console.log('Estimating single posture ...');
 
-        // load the posenet model from a checkpoint
-        const net = await posenet.load();
-
+        const net = await posenet.load({
+            // architecture: 'ResNet50',
+            multiplier: .5,
+        });
         const pose = await net.estimateSinglePose(image, {
             flipHorizontal: false,
         });
@@ -158,33 +186,60 @@ function DropZone() {
         setImageIsRendered(true);
     };
 
-    const onRenderedImageDownload = (e) => {
+    const onDownload = (e, href, prefix) => {
         e.stopPropagation();
-        let link = document.createElement('a');
-        link.download = files[0].name;
-        link.href = canvasRef.current.toDataURL();
+        const link = document.createElement('a');
+        link.download = `${prefix}-${image.name}`;
+        link.href = href;
         link.click();
+    };
+
+    const onRenderedImageDownload = (e) => {
+        const href = canvasRef.current.toDataURL();
+        onDownload(e, href, 'result');
     };
 
     const onOptimizedImageDownload = (e) => {
-        e.stopPropagation();
-        let link = document.createElement('a');
-        link.download = files[0].name;
-        link.href = imageRef.current.src;
-        link.click();
+        const href = imageRef.current.src;
+        onDownload(e, href, 'optimized');
     };
 
-    const onCanvasMouseDown = (e) => {
-        const rect = e.target.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
-        console.log('onMouseDown', {
-            offsetX,
-            offsetY,
-        });
+    const onCanvasMouseDown = () => {
+        setIsDragging(true);
+    };
+
+    const onCanvasMouseUp = () => {
+        setIsDragging(false);
+    };
+    const onCanvasMouseMove = (e) => {
+        if (isDragging) {
+            const rect = e.target.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+            console.log('Dragging over canvas', {
+                offsetX,
+                offsetY,
+            });
+        }
     };
 
     const onCanvasClick = (e) => e.stopPropagation();
+
+    // const onSampleLoad = async(e) => {
+    //     e.stopPropagation();
+    //     const image = await new Promise((resolve, reject) => {
+    //         const image = new Image();
+    //         image.onload = function() {
+    //             resolve(image);
+    //         };
+    //         image.onerror = reject;
+    //         image.src = require('../public/2.jpg');
+    //     });
+    //     setImage({
+    //         src: image.src,
+    //     });
+    // };
+
     return (
         <>
             <StyledDropZone
@@ -198,33 +253,41 @@ function DropZone() {
                         <HintText>Принимается только 1 изображение в обработку</HintText>
                         <HintText>Поддерживаемый формат изображения - *.jpeg или *.png</HintText>
                         <HintText>Максимальнй размер изображения - 10МБ</HintText>
-                        {!!files.length && <HintText>Вы можете заменить изображение, перетащив или выбрав другое</HintText>}
+                        {image && <HintText>Вы можете заменить изображение, перетащив или выбрав другое</HintText>}
                         {<HintReject>{rejectHint}</HintReject>}
                     </DranZoneInfo>
                 )}
+                {/* <StyledButton icon={<Upload/>} label="Загрузить пример" onClick={onSampleLoad}/> */}
             </StyledDropZone>
-            <ResultsWrapper hasResults={!!files.length}>
-                {files.map(file => (
-                    <Fragment key={file.name}>
+            {image && (
+                <ResultsWrapper>
+                    <Fragment key={image.name}>
                         {imageIsOptimizing && <HintText>Изображение обрабатывается</HintText>}
                         <Results>
-                            {!base64 && <PreviewImage src={file.preview}/>}
-                            {base64 && <ResizedImage src={base64} ref={imageRef}/>}
-                            <Canvas
-                                ref={canvasRef}
-                                onClick={onCanvasClick}
-                                onMouseDown={onCanvasMouseDown}
-                            />
+                            <OptimizedImage>
+                                {image.src && <ResizedImage src={image.src} ref={imageRef}/>}
+                                {!imageIsOptimizing && image.optimizedSize && <StyledButton onClick={onOptimizedImageDownload} icon={<Download/>} label="Скачать"/>}
+                                <p>Изначальный размер изображения: <strong>{bytesToSize(image.size)}</strong></p>
+                                {image.optimizedSize && <p>Размер изображения после оптимизации: <strong>{bytesToSize(image.optimizedSize)}</strong></p>}
+                            </OptimizedImage>
+                            <ResultsImage>
+                                <Canvas
+                                    ref={canvasRef}
+                                    onClick={onCanvasClick}
+                                    onMouseDown={onCanvasMouseDown}
+                                    onMouseUp={onCanvasMouseUp}
+                                    onMouseMove={onCanvasMouseMove}
+                                />
+                                {imageIsRendered && <StyledButton icon={<Download/>} onClick={onRenderedImageDownload} label="Скачать"/>}
+                            </ResultsImage>
                         </Results>
-                        <p>Изначальный размер изображения: <strong>{bytesToSize(file.size)}</strong></p>
-                        {!imageIsOptimizing && <p>Размер изображения после оптимизации: <strong>{bytesToSize(optimizedSize)}</strong></p>}
-                        <button onClick={onFileDelete}>Удалить</button>
-                        <button onClick={onPostureEstimate}>Визуализировать точки</button>
-                        {!imageIsOptimizing && <button onClick={onOptimizedImageDownload}>Скачать оптизированное изображение(слева)</button>}
-                        {imageIsRendered && <button onClick={onRenderedImageDownload}>Скачать результат(справа)</button>}
+                        <ImageActions>
+                            <StyledButton icon={<Erase/>} onClick={onFileDelete} label="Удалить"/>
+                            <StyledButton icon={<Edit/>} label="Визуализировать точки" disabled={imageIsRendered} onClick={onPostureEstimate}/>
+                        </ImageActions>
                     </Fragment>
-                ))}
-            </ResultsWrapper>
+                </ResultsWrapper>
+            )}
         </>
     );
 }

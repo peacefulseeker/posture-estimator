@@ -84,10 +84,6 @@ export function drawKeypoints(keypoints, headTurn, ctx, scale = 1) {
             continue;
         }
 
-        // if (keypoint.score < minConfidence) {
-        //     continue;
-        // }
-
         const {y, x} = keypoint.position;
         drawPoint(ctx, y * scale, x * scale, 3, KEYPOINT_DRAW_COLOR);
     }
@@ -99,7 +95,6 @@ export function renderImageToCanvas(image, size, canvas) {
     const ctx = canvas.getContext('2d');
 
     ctx.drawImage(image, 0, 0);
-    // ctx.drawImage(image, 0, 0, canvas.width, canvas.height * image.height / image.width);
 }
 
 export function getHeadTurn(keypoints) {
