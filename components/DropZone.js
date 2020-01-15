@@ -74,6 +74,7 @@ const ResultsWrapper = styled.div`
     margin: 20px auto;
     text-align: center;
     min-height: 800px;
+    overflow-x: scroll;
 `;
 
 const Results = styled.div`
