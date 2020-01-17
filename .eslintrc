@@ -180,6 +180,7 @@
             "error",
             "global"
         ],
+        "prefer-const": 1,
         "no-useless-constructor": "error",
         "react/no-deprecated": "off",
         "jsx-quotes": 1,
