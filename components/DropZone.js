@@ -1,16 +1,17 @@
-import React, {useState, Fragment, useRef} from 'react';
+import React, {useState, Fragment, useRef, useEffect} from 'react';
 import styled from 'styled-components';
 import Jimp from 'jimp';
 import PropTypes from 'prop-types';
 import {useDropzone} from 'react-dropzone';
 import {Button} from 'grommet';
-import {Edit, Erase, Download/*, Upload */} from 'grommet-icons';
+import {Edit, Erase, Download, Upload} from 'grommet-icons';
 import * as posenet from '@tensorflow-models/posenet';
 
 import {bytesToSize} from '../util';
 import {
-    drawSkeleton,
+    // drawCanvas,
     drawKeypoints,
+    drawSkeleton,
     renderImageToCanvas,
     getHeadTurn,
 } from '../util/canvasManipulations';
@@ -114,7 +115,35 @@ function DropZone() {
     const [rejectHint, setRejectHint] = useState();
     const [imageIsRendered, setImageIsRendered] = useState(false);
     const [imageIsOptimizing, setImageIsOptimizing] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
+
+    const renderImage = (file) => {
+        const reader = new FileReader();
+        reader.onabort = () => console.warn('file reading was aborted');
+        reader.onerror = () => console.warn('file reading has failed');
+        reader.onload = async() => {
+            setImageIsOptimizing(true);
+            const originalBuffer = reader.result;
+            const image = await Jimp.read(originalBuffer);
+            const width = image.getWidth();
+            const shouldOptimize = width > IMAGE_RESIZE_WIDTH;
+            if (shouldOptimize) {
+                await image.resize(IMAGE_RESIZE_WIDTH, Jimp.AUTO);
+                await image.quality(IMAGE_RESIZE_QUALITY);
+            }
+            const buffer = await image.getBufferAsync(image.getMIME());
+            const base64 = await image.getBase64Async(image.getMIME());
+            setImage({
+                optimizedSize: buffer.byteLength,
+                src: base64,
+                name: file.name || 'image',
+                type: file.type,
+                size: file.size,
+            });
+            setImageIsOptimizing(false);
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
     const {getRootProps, getInputProps, isDragActive} = useDropzone({
         accept: 'image/jpeg, image/png',
         multiple: false,
@@ -126,27 +155,7 @@ function DropZone() {
                 const reader = new FileReader();
                 reader.onabort = () => console.warn('file reading was aborted');
                 reader.onerror = () => console.warn('file reading has failed');
-                reader.onload = async() => {
-                    setImageIsOptimizing(true);
-                    const originalBuffer = reader.result;
-                    const image = await Jimp.read(originalBuffer);
-                    const width = image.getWidth();
-                    const shouldOptimize = width > IMAGE_RESIZE_WIDTH;
-                    if (shouldOptimize) {
-                        await image.resize(IMAGE_RESIZE_WIDTH, Jimp.AUTO);
-                        await image.quality(IMAGE_RESIZE_QUALITY);
-                    }
-                    const buffer = await image.getBufferAsync(image.getMIME());
-                    const base64 = await image.getBase64Async(image.getMIME());
-                    setImage({
-                        optimizedSize: buffer.byteLength,
-                        src: base64,
-                        name: file.name,
-                        type: file.type,
-                        size: file.size,
-                    });
-                    setImageIsOptimizing(false);
-                };
+                reader.onload = async() => renderImage(file);
                 reader.readAsArrayBuffer(file);
             }
         },
@@ -205,41 +214,30 @@ function DropZone() {
         onDownload(e, href, 'optimized');
     };
 
-    const onCanvasMouseDown = () => {
-        setIsDragging(true);
-    };
-
-    const onCanvasMouseUp = () => {
-        setIsDragging(false);
-    };
-    const onCanvasMouseMove = (e) => {
-        if (isDragging) {
-            const rect = e.target.getBoundingClientRect();
-            const offsetX = e.clientX - rect.left;
-            const offsetY = e.clientY - rect.top;
-            console.log('Dragging over canvas', {
-                offsetX,
-                offsetY,
-            });
-        }
-    };
-
     const onCanvasClick = (e) => e.stopPropagation();
 
-    // const onSampleLoad = async(e) => {
-    //     e.stopPropagation();
-    //     const image = await new Promise((resolve, reject) => {
-    //         const image = new Image();
-    //         image.onload = function() {
-    //             resolve(image);
-    //         };
-    //         image.onerror = reject;
-    //         image.src = require('../public/2.jpg');
-    //     });
-    //     setImage({
-    //         src: image.src,
-    //     });
-    // };
+    useEffect(() => {
+        // const containerId = 'container';
+        // drawCanvas(containerId);
+    });
+
+    const onLoadSample = async(e) => {
+        e.stopPropagation();
+        setImageIsRendered(false);
+        const {image} = e.currentTarget.dataset;
+        var x = new XMLHttpRequest();
+        x.open('GET', image);
+        x.responseType = 'blob';
+        x.onload = function() {
+            var blob = x.response;
+            const reader = new FileReader();
+            reader.onabort = () => console.warn('file reading was aborted');
+            reader.onerror = () => console.warn('file reading has failed');
+            reader.onload = async() => renderImage(blob);
+            reader.readAsDataURL(blob);
+        };
+        x.send();
+    };
 
     return (
         <>
@@ -258,7 +256,8 @@ function DropZone() {
                         {<HintReject>{rejectHint}</HintReject>}
                     </DranZoneInfo>
                 )}
-                {/* <StyledButton icon={<Upload/>} label="Загрузить пример" onClick={onSampleLoad}/> */}
+                <StyledButton icon={<Upload/>} label="Пример 1" data-image={require('../public/example-1.jpg')} onClick={onLoadSample}/>
+                <StyledButton icon={<Upload/>} label="Пример 2" data-image={require('../public/example-2.jpg')} onClick={onLoadSample}/>
             </StyledDropZone>
             {image && (
                 <ResultsWrapper>
@@ -275,9 +274,6 @@ function DropZone() {
                                 <Canvas
                                     ref={canvasRef}
                                     onClick={onCanvasClick}
-                                    onMouseDown={onCanvasMouseDown}
-                                    onMouseUp={onCanvasMouseUp}
-                                    onMouseMove={onCanvasMouseMove}
                                 />
                                 {imageIsRendered && <StyledButton icon={<Download/>} onClick={onRenderedImageDownload} label="Скачать"/>}
                             </ResultsImage>
