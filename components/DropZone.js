@@ -1,4 +1,4 @@
-import React, {useState, Fragment, useRef, useEffect} from 'react';
+import React, {useState, Fragment, useRef} from 'react';
 import styled from 'styled-components';
 import Jimp from 'jimp';
 import PropTypes from 'prop-types';
@@ -8,13 +8,7 @@ import {Edit, Erase, Download, Upload} from 'grommet-icons';
 import * as posenet from '@tensorflow-models/posenet';
 
 import {bytesToSize} from '../util';
-import {
-    // drawCanvas,
-    drawKeypoints,
-    drawSkeleton,
-    renderImageToCanvas,
-    getHeadTurn,
-} from '../util/canvasManipulations';
+import drawCanvasToStage from '../util/canvasManipulations';
 
 const MAX_UPLLOAD_SIZE = 10 * 1024 * 1024; // ~ 10mb
 const IMAGE_RESIZE_WIDTH = 513;
@@ -98,20 +92,24 @@ const ResultsImage = styled.div`
     margin-bottom: 20px;
 `;
 
-const Canvas = styled.canvas`
-    display: block;
+// const Canvas = styled.canvas`
+//     display: block;
+// `;
+
+const Canvas = styled.div`
+    /* display: block; */
 `;
 
-const StyledButton = styled(Button)`
-`;
+const StyledButton = styled(Button)``;
 StyledButton.defaultProps = {
     margin: 'xsmall',
 };
 
 function DropZone() {
     const imageRef = useRef();
-    const canvasRef = useRef();
+    const convasContainer = useRef();
     const [image, setImage] = useState();
+    const [canvasStage, setCanvasStage] = useState();
     const [rejectHint, setRejectHint] = useState();
     const [imageIsRendered, setImageIsRendered] = useState(false);
     const [imageIsOptimizing, setImageIsOptimizing] = useState(false);
@@ -178,22 +176,18 @@ function DropZone() {
     const onPostureEstimate = async(e) => {
         e.stopPropagation();
         const image = imageRef.current;
-        const canvas = canvasRef.current;
+        const canvas = convasContainer.current;
         console.log('Estimating single posture ...');
 
         const net = await posenet.load({
-            // architecture: 'ResNet50',
             multiplier: .5,
         });
         const pose = await net.estimateSinglePose(image, {
             flipHorizontal: false,
         });
-        renderImageToCanvas(image, [image.width, image.height], canvas);
-        const ctx = canvas.getContext('2d');
-        const headTurn = getHeadTurn(pose.keypoints);
-        drawKeypoints(pose.keypoints, headTurn, ctx);
-        drawSkeleton(pose.keypoints, headTurn, ctx);
+        const stage = await drawCanvasToStage(canvas, image, pose.keypoints);
         setImageIsRendered(true);
+        setCanvasStage(stage);
     };
 
     const onDownload = (e, href, prefix) => {
@@ -205,7 +199,7 @@ function DropZone() {
     };
 
     const onRenderedImageDownload = (e) => {
-        const href = canvasRef.current.toDataURL();
+        const href = canvasStage.toCanvas().toDataURL();
         onDownload(e, href, 'result');
     };
 
@@ -215,11 +209,6 @@ function DropZone() {
     };
 
     const onCanvasClick = (e) => e.stopPropagation();
-
-    useEffect(() => {
-        // const containerId = 'container';
-        // drawCanvas(containerId);
-    });
 
     const onLoadSample = async(e) => {
         e.stopPropagation();
@@ -272,7 +261,7 @@ function DropZone() {
                             </OptimizedImage>
                             <ResultsImage>
                                 <Canvas
-                                    ref={canvasRef}
+                                    ref={convasContainer}
                                     onClick={onCanvasClick}
                                 />
                                 {imageIsRendered && <StyledButton icon={<Download/>} onClick={onRenderedImageDownload} label="Скачать"/>}
