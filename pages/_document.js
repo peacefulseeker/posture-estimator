@@ -19,7 +19,6 @@ export default class DocumentRoot extends Document {
                     <meta charSet="utf-8"/>
                     <meta httpEquiv="x-dns-prefetch-control" content="on"/>
                     <meta content="origin" name="referrer"/>
-                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
                     <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,700&display=swap" rel="stylesheet"/>
                 </Head>
                 <body>

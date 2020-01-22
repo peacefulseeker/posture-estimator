@@ -1,5 +1,6 @@
 import React from 'react';
 import App from 'next/app';
+import Head from 'next/head';
 import {createGlobalStyle} from 'styled-components';
 
 const GlobalStyles = createGlobalStyle`
@@ -12,6 +13,7 @@ const GlobalStyles = createGlobalStyle`
         font-size: 16px;
         -webkit-font-smoothing: antialiased;
     }
+
     html {
         box-sizing: border-box;
         font-size: 10px;
@@ -43,6 +45,9 @@ export default class FrontPageApp extends App {
 
         return (
             <>
+                <Head>
+                    <meta name="viewport" content="width=device-width"/>
+                </Head>
                 <GlobalStyles/>
                 <Component {...pageProps}/>
             </>
