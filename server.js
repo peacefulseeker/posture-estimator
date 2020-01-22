@@ -8,7 +8,6 @@ app.prepare().then(async() => {
     const server = express();
 
     server.use(app.getRequestHandler());
-    server.get('/server_status', (req, res) => res.sendStatus(200));
     await server.listen(port);
     console.log(`> Server ready on http://localhost:${port}`);
 });
