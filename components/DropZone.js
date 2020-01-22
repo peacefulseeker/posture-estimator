@@ -7,6 +7,8 @@ import {Button} from 'grommet';
 import {Edit, Erase, Download, Upload} from 'grommet-icons';
 import * as posenet from '@tensorflow-models/posenet';
 
+import Spinner from '../components/Spinner';
+
 import {bytesToSize} from '../util';
 import drawCanvasToStage from '../util/canvasManipulations';
 
@@ -112,6 +114,7 @@ function DropZone() {
     const [canvasStage, setCanvasStage] = useState();
     const [rejectHint, setRejectHint] = useState();
     const [imageIsRendered, setImageIsRendered] = useState(false);
+    const [imageIsRendering, setImageIsRendering] = useState(false);
     const [imageIsOptimizing, setImageIsOptimizing] = useState(false);
 
     const renderImage = (file) => {
@@ -175,19 +178,26 @@ function DropZone() {
 
     const onPostureEstimate = async(e) => {
         e.stopPropagation();
+        setImageIsRendering(true);
         const image = imageRef.current;
         const canvas = convasContainer.current;
         console.log('Estimating single posture ...');
 
-        const net = await posenet.load({
-            multiplier: .5,
-        });
-        const pose = await net.estimateSinglePose(image, {
-            flipHorizontal: false,
-        });
-        const stage = await drawCanvasToStage(canvas, image, pose.keypoints);
-        setImageIsRendered(true);
-        setCanvasStage(stage);
+        try {
+            const net = await posenet.load({
+                multiplier: .5,
+            });
+            const pose = await net.estimateSinglePose(image, {
+                flipHorizontal: false,
+            });
+            const stage = await drawCanvasToStage(canvas, image, pose.keypoints);
+            setImageIsRendered(true);
+            setImageIsRendering(false);
+            setCanvasStage(stage);
+        } catch (error) {
+            console.log(error);
+            setImageIsRendered(false);
+        }
     };
 
     const onDownload = (e, href, prefix) => {
@@ -269,7 +279,7 @@ function DropZone() {
                         </Results>
                         <ImageActions>
                             <StyledButton icon={<Erase/>} onClick={onFileDelete} label="Удалить"/>
-                            <StyledButton icon={<Edit/>} label="Визуализировать точки" disabled={imageIsRendered} onClick={onPostureEstimate}/>
+                            <StyledButton icon={imageIsRendering ? <Spinner/> : <Edit/>} label="Визуализировать точки" disabled={imageIsRendering || imageIsRendered} onClick={onPostureEstimate}/>
                         </ImageActions>
                     </Fragment>
                 </ResultsWrapper>
