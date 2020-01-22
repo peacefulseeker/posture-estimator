@@ -24,7 +24,6 @@ export default class DocumentRoot extends Document {
                 <body>
                     <Main/>
                     <NextScript/>
-                    <div id="container"/>
                 </body>
             </html>
         );
