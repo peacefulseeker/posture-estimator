@@ -1,7 +1,7 @@
 import React from 'react';
 import App from 'next/app';
 import Head from 'next/head';
-import {createGlobalStyle} from 'styled-components';
+import styled, {createGlobalStyle} from 'styled-components';
 
 const GlobalStyles = createGlobalStyle`
    body {
@@ -39,6 +39,10 @@ const GlobalStyles = createGlobalStyle`
     }
 `;
 
+const Layout = styled.main`
+    padding: 10px;
+`;
+
 export default class FrontPageApp extends App {
     render() {
         const {Component, pageProps} = this.props;
@@ -49,7 +53,7 @@ export default class FrontPageApp extends App {
                     <meta name="viewport" content="width=device-width"/>
                 </Head>
                 <GlobalStyles/>
-                <Component {...pageProps}/>
+                <Layout><Component {...pageProps}/></Layout>
             </>
         );
     }

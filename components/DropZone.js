@@ -13,13 +13,13 @@ import {bytesToSize} from '../util';
 import drawCanvasToStage from '../util/canvasManipulations';
 
 const MAX_UPLLOAD_SIZE = 10 * 1024 * 1024; // ~ 10mb
-const IMAGE_RESIZE_WIDTH = 513;
+const IMAGE_RESIZE_WIDTH = 520;
 const IMAGE_RESIZE_QUALITY = 90;
 
 const StyledDropZone = styled.div`
     width: ${props => props.width || IMAGE_RESIZE_WIDTH}px;
     margin: 20px auto;
-    min-height: 150px;
+    padding: 15px;
     border: 1px solid #656565;
     outline: none;
     display: flex;
@@ -27,6 +27,14 @@ const StyledDropZone = styled.div`
     align-items: center;
     text-align: center;
     flex-wrap: wrap;
+
+    @media (max-width: ${props => props.width || IMAGE_RESIZE_WIDTH}px) {
+        width: 100%;
+    }
+
+    @media screen {
+
+    }
 
     &:hover {
         cursor: pointer;
@@ -44,11 +52,6 @@ StyledDropZone.propTypes = {
 const DranZoneInfo = styled.div`
     flex-basis: 100%;
     margin-bottom: 20px;
-`;
-
-const ResizedImage = styled.img`
-    /* width: 100%; */
-    display: block;
 `;
 
 const HintTitle = styled.h2`
@@ -70,13 +73,13 @@ const HintReject = styled.p`
 const ResultsWrapper = styled.div`
     margin: 20px auto;
     text-align: center;
-    min-height: 800px;
     overflow-x: scroll;
 `;
 
 const Results = styled.div`
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
 `;
 
 const ImageActions = styled.div`
@@ -88,19 +91,17 @@ const ImageActions = styled.div`
 
 const OptimizedImage = styled.div`
     margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
 `;
 
 const ResultsImage = styled.div`
     margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
 `;
 
-// const Canvas = styled.canvas`
-//     display: block;
-// `;
-
-const Canvas = styled.div`
-    /* display: block; */
-`;
+const CanvasWrapper = styled.div``;
 
 const StyledButton = styled(Button)``;
 StyledButton.defaultProps = {
@@ -264,13 +265,17 @@ function DropZone() {
                         {imageIsOptimizing && <HintText>Изображение обрабатывается</HintText>}
                         <Results>
                             <OptimizedImage>
-                                {image.src && <ResizedImage src={image.src} ref={imageRef}/>}
-                                {!imageIsOptimizing && image.optimizedSize && <StyledButton onClick={onOptimizedImageDownload} icon={<Download/>} label="Скачать"/>}
-                                <p>Изначальный размер изображения: <strong>{bytesToSize(image.size)}</strong></p>
-                                {image.optimizedSize && <p>Размер изображения после оптимизации: <strong>{bytesToSize(image.optimizedSize)}</strong></p>}
+                                {image.src && <img src={image.src} ref={imageRef}/>}
+                                {!imageIsOptimizing && image.optimizedSize && image.optimizedSize < image.size && (
+                                    <>
+                                        <p>Изначальный размер изображения: <strong>{bytesToSize(image.size)}</strong></p>
+                                        <p>Размер изображения после оптимизации: <strong>{bytesToSize(image.optimizedSize)}</strong></p>
+                                    </>
+                                )}
+                                <StyledButton onClick={onOptimizedImageDownload} icon={<Download/>} label="Скачать"/>
                             </OptimizedImage>
                             <ResultsImage>
-                                <Canvas
+                                <CanvasWrapper
                                     ref={convasContainer}
                                     onClick={onCanvasClick}
                                 />
