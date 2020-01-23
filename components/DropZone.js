@@ -106,6 +106,7 @@ const CanvasWrapper = styled.div``;
 const StyledButton = styled(Button)``;
 StyledButton.defaultProps = {
     margin: 'xsmall',
+    color: 'status-ok',
 };
 
 function DropZone() {
