@@ -4,6 +4,11 @@ const withPlugins = require('next-compose-plugins');
 module.exports = withPlugins([
     withImages,
 ], {
+    // publicRuntimeConfig: {
+    //     localeSubpaths: typeof process.env.LOCALE_SUBPATHS === 'string'
+    //       ? process.env.LOCALE_SUBPATHS
+    //       : 'none',
+    // },
     webpack(webpackConfig) {
         const originalEntry = webpackConfig.entry;
         webpackConfig.entry = async() => {

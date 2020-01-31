@@ -1,7 +1,9 @@
 import React from 'react';
 import App from 'next/app';
 import Head from 'next/head';
-import styled, {createGlobalStyle} from 'styled-components';
+import {createGlobalStyle} from 'styled-components';
+import {appWithTranslation} from '../i18n';
+import Layout from '../components/Layout';
 
 const GlobalStyles = createGlobalStyle`
    body {
@@ -39,11 +41,8 @@ const GlobalStyles = createGlobalStyle`
     }
 `;
 
-const Layout = styled.main`
-    padding: 10px;
-`;
-
-export default class FrontPageApp extends App {
+@appWithTranslation
+class MyApp extends App {
     render() {
         const {Component, pageProps} = this.props;
 
@@ -53,8 +52,11 @@ export default class FrontPageApp extends App {
                     <meta name="viewport" content="width=device-width"/>
                 </Head>
                 <GlobalStyles/>
-                <Layout><Component {...pageProps}/></Layout>
+                <Layout>
+                    <Component {...pageProps}/>
+                </Layout>
             </>
         );
     }
 }
+export default MyApp;

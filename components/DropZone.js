@@ -7,9 +7,10 @@ import {Button} from 'grommet';
 import {Edit, Erase, Download, Upload} from 'grommet-icons';
 import * as posenet from '@tensorflow-models/posenet';
 
+import {useTranslation} from '../i18n';
 import Spinner from '../components/Spinner';
 
-import {bytesToSize} from '../util';
+import bytesToSize from '../util/bytesToSize';
 import drawCanvasToStage from '../util/canvasManipulations';
 
 const MAX_UPLLOAD_SIZE = 10 * 1024 * 1024; // ~ 10mb
@@ -109,7 +110,8 @@ StyledButton.defaultProps = {
     color: 'status-ok',
 };
 
-function DropZone() {
+export default function DropZone() {
+    const {t} = useTranslation();
     const imageRef = useRef();
     const convasContainer = useRef();
     const [image, setImage] = useState();
@@ -163,11 +165,10 @@ function DropZone() {
             }
         },
         onDropRejected: rejectedFiles => {
-            setRejectHint(`
-                Файл не соотвествует требованиям.
-                Размер: '${bytesToSize(rejectedFiles[0].size)}'.
-                Тип Файла: '${rejectedFiles[0].type.split('/')[1]}'
-            `);
+            setRejectHint(t('fileValidationError', {
+                size: bytesToSize(rejectedFiles[0].size),
+                fileType: rejectedFiles[0].type.split('/')[1],
+            }));
         },
     });
 
@@ -249,43 +250,45 @@ function DropZone() {
                 <input {...getInputProps()} multiple={false}/>
                 {!isDragActive && (
                     <DranZoneInfo>
-                        <HintTitle>Выберите или перетащите файл сюда</HintTitle>
-                        <HintText>Принимается только 1 изображение в обработку</HintText>
-                        <HintText>Поддерживаемый формат изображения - *.jpeg или *.png</HintText>
-                        <HintText>Максимальнй размер изображения - 10МБ</HintText>
-                        {image && <HintText>Вы можете заменить изображение, перетащив или выбрав другое</HintText>}
+                        <HintTitle>{t('dropZoneTitle')}</HintTitle>
+                        <HintText>{t('requirementImageCount', {imageCount: 1})}</HintText>
+                        <HintText>{t('requirementImageFileType', {type1: '*.jpeg', type2: '*.png'})}</HintText>
+                        <HintText>{t('requirementImageFileSize', {imageSize: 10})}</HintText>
+                        {image && <HintText>{t('replaceImage')}</HintText>}
                         {<HintReject>{rejectHint}</HintReject>}
                     </DranZoneInfo>
                 )}
-                <StyledButton icon={<Upload/>} label="Пример 1" data-image={require('../public/example-1.jpg')} onClick={onLoadSample}/>
-                <StyledButton icon={<Upload/>} label="Пример 2" data-image={require('../public/example-2.jpg')} onClick={onLoadSample}/>
+                <StyledButton icon={<Upload/>} label={`${t('example')} 1`} data-image={require('../public/example-1.jpg')} onClick={onLoadSample}/>
+                <StyledButton icon={<Upload/>} label={`${t('example')} 2`} data-image={require('../public/example-2.jpg')} onClick={onLoadSample}/>
             </StyledDropZone>
             {image && (
                 <ResultsWrapper>
                     <Fragment key={image.name}>
-                        {imageIsOptimizing && <HintText>Изображение обрабатывается</HintText>}
+                        {imageIsOptimizing && <HintText>{t('imageProcessing')}</HintText>}
                         <Results>
                             <OptimizedImage>
                                 {image.src && <img src={image.src} ref={imageRef}/>}
                                 {!imageIsOptimizing && image.optimizedSize && image.optimizedSize < image.size && (
                                     <>
-                                        <p>Изначальный размер изображения: <strong>{bytesToSize(image.size)}</strong></p>
-                                        <p>Размер изображения после оптимизации: <strong>{bytesToSize(image.optimizedSize)}</strong></p>
+                                        {/* eslint-disable */}
+                                        <p dangerouslySetInnerHTML={{__html: t('initialImageSize', {initialSize: bytesToSize(image.size)})}}/>
+                                        <p dangerouslySetInnerHTML={{__html: t('finalImageSize', {finalSize: bytesToSize(image.optimizedSize)})}}/>
+                                        {/* eslint-enable */}
                                     </>
                                 )}
-                                <StyledButton onClick={onOptimizedImageDownload} icon={<Download/>} label="Скачать"/>
+                                <StyledButton onClick={onOptimizedImageDownload} icon={<Download/>} label={t('actions.download')}/>
                             </OptimizedImage>
                             <ResultsImage>
                                 <CanvasWrapper
                                     ref={convasContainer}
                                     onClick={onCanvasClick}
                                 />
-                                {imageIsRendered && <StyledButton icon={<Download/>} onClick={onRenderedImageDownload} label="Скачать"/>}
+                                {imageIsRendered && <StyledButton icon={<Download/>} onClick={onRenderedImageDownload} label={t('actions.download')}/>}
                             </ResultsImage>
                         </Results>
                         <ImageActions>
-                            <StyledButton icon={<Erase/>} onClick={onFileDelete} label="Удалить"/>
-                            <StyledButton icon={imageIsRendering ? <Spinner/> : <Edit/>} label="Визуализировать точки" disabled={imageIsRendering || imageIsRendered} onClick={onPostureEstimate}/>
+                            <StyledButton icon={<Erase/>} onClick={onFileDelete} label={t('actions.erase')}/>
+                            <StyledButton icon={imageIsRendering ? <Spinner/> : <Edit/>} label={t('actions.visualize')} disabled={imageIsRendering || imageIsRendered} onClick={onPostureEstimate}/>
                         </ImageActions>
                     </Fragment>
                 </ResultsWrapper>
@@ -293,5 +296,3 @@ function DropZone() {
         </>
     );
 }
-
-export default DropZone;

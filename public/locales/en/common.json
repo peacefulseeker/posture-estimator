@@ -1,0 +1,19 @@
+{
+    "pageTitle": "Estimate your posture by uploading a photo",
+    "fullBodyPostureEstimation": "Full posture testing(RU)",
+    "fileValidationError": "The file does not meet the requirements. \n Size: '{{size}}'. \n File Type: {fileType}'",
+    "dropZoneTitle": "Select or drag a file here",
+    "initialImageSize": "Original Image Size: <strong>{{initialSize}}</strong>",
+    "finalImageSize": "Image size after optimization: <strong>{{finalSize}}</strong>",
+    "requirementImageCount": "Only {{imageCount}} image is accepted for processing",
+    "requirementImageFileType": "The supported image format is {{type1}} or {{type2}}",
+    "requirementImageFileSize": "Maximum Image Size - {{imageSize}} MB",
+    "replaceImage": "You can replace the image by dragging or selecting another",
+    "imageProcessing": "Image is being processed",
+    "example": "Example",
+    "actions": {
+        "download": "Download",
+        "visualize": "Visualize",
+        "erase": "Erase"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "pageTitle": "Оцените вашу осанку, загрузив фотографию",
+    "fullBodyPostureEstimation": "Полное тестирование осанки",
+    "fileValidationError": "Файл не соотвествует требованиям. \n Размер: '{{size}}'. \n Тип Файла: '{{fileType}}'",
+    "dropZoneTitle": "Выберите или перетащите файл сюда",
+    "initialImageSize": "Изначальный размер изображения: <strong>{{initialSize}}</strong>",
+    "finalImageSize": "Размер изображения после оптимизации: <strong>{{finalSize}}</strong>",
+    "requirementImageCount": "Принимается только {{imageCount}} изображение в обработку",
+    "requirementImageFileType": "Поддерживаемый формат изображения - {{type1}} или {{type2}}",
+    "requirementImageFileSize": "Максимальный размер изображения - {{imageSize}}МБ",
+    "replaceImage": "Вы можете заменить изображение, перетащив или выбрав другое",
+    "imageProcessing": "Изображение обрабатывается",
+    "example": "Пример",
+    "actions": {
+        "download": "Скачать",
+        "visualize": "Визуализировать точки",
+        "erase": "Удалить"
+    }
+}
