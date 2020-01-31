@@ -14,6 +14,7 @@ const NextI18Next = require('next-i18next').default;
 const i18nInit = new NextI18Next({
     // debug: true,
     // saveMissing: true,
+    localePath: typeof window === 'undefined' ? 'public/locales' : 'locales',
     otherLanguages: ['en'],
     defaultLanguage: 'ru',
     // localeSubpaths: localeSubpathVariations[localeSubpaths],

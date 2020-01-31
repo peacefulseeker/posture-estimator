@@ -10,7 +10,7 @@ const GlobalStyles = createGlobalStyle`
         padding: 0;
         margin: 0;
         line-height: 2;
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Rubik', sans-serif;
         overflow-x: hidden;
         font-size: 16px;
         -webkit-font-smoothing: antialiased;
