@@ -34,3 +34,6 @@ export default function Home() {
         </>
     );
 }
+Home.getInitialProps = async() => ({
+    namespacesRequired: ['common'],
+});
